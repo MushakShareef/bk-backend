@@ -12,9 +12,9 @@ const PORT = process.env.PORT || 3000;
 // Middleware - CORS Configuration
 app.use(cors({
     origin: [
-        'https://try-bk-chart.vercel.app',
         'http://localhost:3000',
-        'http://localhost:5173',        
+        'http://localhost:5173',
+        'https://bk-spiritual-chart.vercel.app',
         process.env.FRONTEND_URL
     ].filter(Boolean),
     credentials: true,
