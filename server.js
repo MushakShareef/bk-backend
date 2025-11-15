@@ -9,9 +9,22 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
+// Middleware - CORS Configuration
+app.use(cors({
+    origin: [
+        'http://localhost:3000',
+        'http://localhost:5173',
+        'https://bk-spiritual-chart.vercel.app',
+        process.env.FRONTEND_URL
+    ].filter(Boolean),
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
+
+// Handle preflight requests
+app.options('*', cors());
 
 // Database Connection
 const pool = new Pool({
@@ -95,16 +108,16 @@ async function initDatabase() {
         const pointsCheck = await pool.query('SELECT COUNT(*) FROM points');
         if (pointsCheck.rows[0].count === '0') {
             const defaultPoints = [
-                'பிறரிடம் பேசும்போது ஆத்மாவோடு பேசினேனா',
-                'powerful அமிர்த வேளை',
-                'அமர்ந்து yoga செய்தது ஒருநாளில் 4 hours அமிர்த வேளை உட்பட இருக்க வேண்டும்',
-                'ஒரு அவ்யக்தமுரளி படிப்பது அதில் ஆழமாக சிந்திப்பது',
-                'அன்றாட முரளியில் 10 Points எழுத வேண்டும்',
-                'பாபா நினைவில் மெதுவாக மென்று உணவை சாப்பிட்டுஇருக்க வேண்டும்',
-                'உடற்பயிற்சி ஒவ்வொரு நாளும் அரைமணிநேரம் செய்திருக்க வேண்டும்',
-                'அப்புறம் 3 விசயங்களின் Chart உங்களின் விருப்பம்',
-                'இதெல்லாம் நீங்கள் ஏற்று கொள்கிறீர் களா?',
-                'Point Chart எழுது எத்தனை பேர் ready?'
+                'பிறரிடம் பேசும்பொழுது ஆத்ம உணர்வோடு, ஆத்மாவோடு பேசினேனா?',
+                'அமிர்தவேளை சக்திசாலியாக இருந்ததா?',
+                '(அமிர்த வேளை உட்பட) 4 மணி நேரம் அமர்ந்து யோகா செய்தேனா?',
+                'அவ்யக்த முரளி படித்து, ஆழ்ந்து சிந்தித்தேனா?',
+                'அன்றாட முரளியில் 10 பாயிண்ட்ஸ் எழுதினேனா?',
+                'பாபா நினைவில் உணவை மெதுவாக  மென்று சாப்பிட்டேனா?',
+                'குறைந்தது அரை மணி நேரம் உடற்பயிற்சி செய்தேனா?',
+                'குறைந்தது 5 முறை டிரில் செய்தேனா?',
+                'மனசா சேவை இயற்கைக்கு, உலகிற்கு செய்தேனா?',
+                'இரவு பாபாவிடம் கணக்கு ஒப்படைப்பேனா?'
             ];
 
             for (let i = 0; i < defaultPoints.length; i++) {
