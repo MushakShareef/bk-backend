@@ -13,9 +13,9 @@ const PORT = process.env.PORT || 10000;
 
 // ⭐ CORS FIX — allow your frontend
 const allowedOrigins = [
+    'https://try-bk-chart.vercel.app',
     'http://localhost:3000',
     'http://localhost:5173',
-    'https://try-bk-chart.vercel.app',
     process.env.FRONTEND_URL
 ].filter(Boolean);
 
@@ -28,12 +28,18 @@ app.use(cors({
 
 // Extra safety CORS headers
 app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", allowedOrigins[0]);
+    const origin = req.headers.origin;
+
+    if (allowedOrigins.includes(origin)) {
+        res.header("Access-Control-Allow-Origin", origin);
+    }
+
     res.header("Access-Control-Allow-Credentials", "true");
     res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
     res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
     next();
 });
+
 
 app.options('*', cors());
 app.use(express.json());
