@@ -87,7 +87,7 @@ async function initDatabase() {
                 member_id INTEGER REFERENCES members(id) ON DELETE CASCADE,
                 point_id INTEGER REFERENCES points(id) ON DELETE CASCADE,
                 date DATE NOT NULL,
-                completed BOOLEAN DEFAULT false,
+                effort INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(member_id, point_id, date)
             )
@@ -460,11 +460,11 @@ app.post('/api/members/:memberId/daily', async (req, res) => {
         const { date, pointId, completed } = req.body;
 
         await pool.query(
-            `INSERT INTO daily_records (member_id, point_id, date, completed) 
+            `INSERT INTO daily_records (member_id, point_id, date, effort) 
              VALUES ($1, $2, $3, $4) 
              ON CONFLICT (member_id, point_id, date) 
-             DO UPDATE SET completed = $4`,
-            [memberId, pointId, date, completed]
+             DO UPDATE SET effort = $4`,
+            [memberId, pointId, date, effort]
         );
 
         res.json({ message: 'Record updated' });
