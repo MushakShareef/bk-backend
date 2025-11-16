@@ -500,7 +500,7 @@ app.get('/api/members/:memberId/progress/:period', async (req, res) => {
         // Select all points, left join average effort over date range for the member
         const query = `
             SELECT p.id as point_id, p.text,
-                   COALESCE(AVG(dr.effort)::numeric, 0) AS avg_effort
+                   COALESCE(AVG(dr.completed)::numeric, 0) AS avg_effort
             FROM points p
             LEFT JOIN daily_records dr
               ON dr.point_id = p.id
