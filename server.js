@@ -444,31 +444,41 @@ app.get('/api/members/:memberId/daily/:date', async (req, res) => {
     try {
         const { memberId, date } = req.params;
         const result = await pool.query(
-            'SELECT * FROM daily_records WHERE member_id = $1 AND date = $2',
+            'SELECT point_id, effort FROM daily_records WHERE member_id = $1 AND date = $2',
             [memberId, date]
         );
-        res.json({ records: result.rows });
+        
+        // FIXED: Return as object with point_id as key and effort as value
+        const records = {};
+        result.rows.forEach(row => {
+            records[row.point_id] = row.effort;
+        });
+        
+        res.json(records);  // FIXED: Return object instead of array
     } catch (error) {
+        console.error('Get daily records error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
 
-// Update Daily Record
+
+// FIXED: Update Daily Record
 app.post('/api/members/:memberId/daily', async (req, res) => {
     try {
         const { memberId } = req.params;
-        const { date, pointId, completed } = req.body;
+        const { date, pointId, completed } = req.body;  // 'completed' contains percentage value
 
         await pool.query(
             `INSERT INTO daily_records (member_id, point_id, date, effort) 
              VALUES ($1, $2, $3, $4) 
              ON CONFLICT (member_id, point_id, date) 
              DO UPDATE SET effort = $4`,
-            [memberId, pointId, date, effort]
+            [memberId, pointId, date, completed]  // FIXED: use 'completed' parameter
         );
 
         res.json({ message: 'Record updated' });
     } catch (error) {
+        console.error('Update daily record error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -489,28 +499,32 @@ app.get('/api/members/:memberId/progress/:period', async (req, res) => {
         const points = await pool.query('SELECT * FROM points ORDER BY order_num');
         
         const progress = await Promise.all(points.rows.map(async (point) => {
+            // FIXED: Calculate average of effort percentages
             const result = await pool.query(
-                `SELECT COUNT(*) as total, SUM(CASE WHEN completed THEN 1 ELSE 0 END) as completed
+                `SELECT 
+                    COUNT(*) as total_records,
+                    COALESCE(AVG(effort), 0) as avg_effort,
+                    COALESCE(SUM(effort), 0) as sum_effort
                  FROM daily_records 
                  WHERE member_id = $1 AND point_id = $2 AND date >= $3`,
                 [memberId, point.id, startDate.toISOString().split('T')[0]]
             );
 
-            const total = parseInt(result.rows[0].total) || days;
-            const completed = parseInt(result.rows[0].completed) || 0;
-            const percentage = total > 0 ? (completed / days) * 100 : 0;
+            const avgEffort = parseFloat(result.rows[0].avg_effort) || 0;
+            const totalRecords = parseInt(result.rows[0].total_records) || 0;
 
             return {
                 pointId: point.id,
                 text: point.text,
-                completed,
-                total: days,
-                percentage
+                percentage: Math.round(avgEffort),  // FIXED: Use average effort as percentage
+                totalRecords: totalRecords,
+                expectedRecords: days
             };
         }));
 
         res.json({ progress });
     } catch (error) {
+        console.error('Get progress error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
