@@ -395,4 +395,19 @@ app.delete('/api/admin/delete-member/:id', async (req, res) => {
 // health
 app.get('/', (req, res) => res.json({ status: 'Backend running OK' }));
 
+// TEMP: Delete ALL points (so default 10 auto-recreate)
+app.delete('/api/debug/clear-points', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM points');
+        res.json({ message: 'All points deleted. Restart backend to auto-insert 10 default points.' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Error deleting points.' });
+    }
+});
+
+
+
+
+
 app.listen(PORT, () => console.log(`Server running on ${PORT}`));
