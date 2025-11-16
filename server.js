@@ -1,4 +1,4 @@
-// server.js - Complete Backend for BK Spiritual Chart
+// server.js - Complete Backend for BK Spiritual Chart - WITH FIXES
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
@@ -204,6 +204,7 @@ app.post('/api/admin/login', async (req, res) => {
 
         res.json({ admin: { id: admin.id, username: admin.username } });
     } catch (error) {
+        console.error('Admin login error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -231,6 +232,7 @@ app.post('/api/members/register', async (req, res) => {
 
         res.status(201).json({ member: result.rows[0] });
     } catch (error) {
+        console.error('Registration error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -254,6 +256,7 @@ app.post('/api/admin/forgot-password', async (req, res) => {
 
         res.json({ message: 'Reset code sent to email' });
     } catch (error) {
+        console.error('Admin forgot password error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -285,6 +288,7 @@ app.post('/api/admin/reset-password', async (req, res) => {
         
         res.json({ message: 'Password reset successful' });
     } catch (error) {
+        console.error('Admin reset password error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -309,6 +313,7 @@ app.post('/api/members/forgot-password', async (req, res) => {
 
         res.json({ message: 'Reset code sent to admin email' });
     } catch (error) {
+        console.error('Member forgot password error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -340,6 +345,7 @@ app.post('/api/members/reset-password', async (req, res) => {
         
         res.json({ message: 'Password reset successful' });
     } catch (error) {
+        console.error('Member reset password error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -363,6 +369,7 @@ app.post('/api/members/login', async (req, res) => {
 
         res.json({ member: { id: member.id, name: member.name, centre: member.centre, mobile: member.mobile, status: member.status } });
     } catch (error) {
+        console.error('Member login error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -373,6 +380,7 @@ app.get('/api/admin/all-members', async (req, res) => {
         const result = await pool.query('SELECT * FROM members ORDER BY created_at DESC');
         res.json({ members: result.rows });
     } catch (error) {
+        console.error('Get all members error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -384,6 +392,7 @@ app.delete('/api/admin/delete-member/:id', async (req, res) => {
         await pool.query('DELETE FROM members WHERE id = $1', [id]);
         res.json({ message: 'Member deleted' });
     } catch (error) {
+        console.error('Delete member error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -394,6 +403,7 @@ app.get('/api/points', async (req, res) => {
         const result = await pool.query('SELECT * FROM points ORDER BY order_num');
         res.json({ points: result.rows });
     } catch (error) {
+        console.error('Get points error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -411,6 +421,7 @@ app.post('/api/admin/points', async (req, res) => {
         );
         res.status(201).json({ point: result.rows[0] });
     } catch (error) {
+        console.error('Add point error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -424,6 +435,7 @@ app.put('/api/admin/points/:id', async (req, res) => {
         await pool.query('UPDATE points SET text = $1 WHERE id = $2', [text, id]);
         res.json({ message: 'Point updated' });
     } catch (error) {
+        console.error('Update point error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -435,11 +447,12 @@ app.delete('/api/admin/points/:id', async (req, res) => {
         await pool.query('DELETE FROM points WHERE id = $1', [id]);
         res.json({ message: 'Point deleted' });
     } catch (error) {
+        console.error('Delete point error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
 
-// Get Member's Daily Records
+// FIXED: Get Member's Daily Records
 app.get('/api/members/:memberId/daily/:date', async (req, res) => {
     try {
         const { memberId, date } = req.params;
@@ -448,32 +461,31 @@ app.get('/api/members/:memberId/daily/:date', async (req, res) => {
             [memberId, date]
         );
         
-        // FIXED: Return as object with point_id as key and effort as value
+        // Return as object with point_id as key and effort as value
         const records = {};
         result.rows.forEach(row => {
             records[row.point_id] = row.effort;
         });
         
-        res.json(records);  // FIXED: Return object instead of array
+        res.json(records);
     } catch (error) {
         console.error('Get daily records error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
 
-
 // FIXED: Update Daily Record
 app.post('/api/members/:memberId/daily', async (req, res) => {
     try {
         const { memberId } = req.params;
-        const { date, pointId, completed } = req.body;  // 'completed' contains percentage value
+        const { date, pointId, completed } = req.body;
 
         await pool.query(
             `INSERT INTO daily_records (member_id, point_id, date, effort) 
              VALUES ($1, $2, $3, $4) 
              ON CONFLICT (member_id, point_id, date) 
              DO UPDATE SET effort = $4`,
-            [memberId, pointId, date, completed]  // FIXED: use 'completed' parameter
+            [memberId, pointId, date, completed]
         );
 
         res.json({ message: 'Record updated' });
@@ -483,7 +495,7 @@ app.post('/api/members/:memberId/daily', async (req, res) => {
     }
 });
 
-// Get Member Progress
+// FIXED: Get Member Progress
 app.get('/api/members/:memberId/progress/:period', async (req, res) => {
     try {
         const { memberId, period } = req.params;
@@ -499,7 +511,6 @@ app.get('/api/members/:memberId/progress/:period', async (req, res) => {
         const points = await pool.query('SELECT * FROM points ORDER BY order_num');
         
         const progress = await Promise.all(points.rows.map(async (point) => {
-            // FIXED: Calculate average of effort percentages
             const result = await pool.query(
                 `SELECT 
                     COUNT(*) as total_records,
@@ -516,7 +527,7 @@ app.get('/api/members/:memberId/progress/:period', async (req, res) => {
             return {
                 pointId: point.id,
                 text: point.text,
-                percentage: Math.round(avgEffort),  // FIXED: Use average effort as percentage
+                percentage: Math.round(avgEffort),
                 totalRecords: totalRecords,
                 expectedRecords: days
             };
@@ -535,6 +546,7 @@ app.get('/api/members', async (req, res) => {
         const result = await pool.query('SELECT id, name, centre, mobile, status FROM members ORDER BY name');
         res.json({ members: result.rows });
     } catch (error) {
+        console.error('Get members error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
