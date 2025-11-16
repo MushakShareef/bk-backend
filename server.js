@@ -1,4 +1,4 @@
-// server.js - Complete Backend for BK Spiritual Chart - WITH FIXES
+// server.js - Complete Backend for BK Spiritual Chart - FINAL WORKING VERSION
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
@@ -101,7 +101,7 @@ async function initDatabase() {
                 'INSERT INTO admins (username, password) VALUES ($1, $2)',
                 ['AmeerMushak', hashedPassword]
             );
-            console.log('Default admin created');
+            console.log('✅ Default admin created');
         }
 
         // Create default points if not exists
@@ -126,12 +126,12 @@ async function initDatabase() {
                     [defaultPoints[i], i + 1]
                 );
             }
-            console.log('Default points created');
+            console.log('✅ Default points created');
         }
 
-        console.log('Database initialized successfully');
+        console.log('✅ Database initialized successfully');
     } catch (error) {
-        console.error('Database initialization error:', error);
+        console.error('❌ Database initialization error:', error);
     }
 }
 
@@ -150,9 +150,9 @@ async function sendAdminEmail(memberName, memberCentre, memberMobile) {
                 <p>Member has been automatically approved and can now login.</p>
             `
         });
-        console.log('Email sent successfully');
+        console.log('✅ Email sent successfully');
     } catch (error) {
-        console.error('Email error:', error);
+        console.error('❌ Email error:', error);
     }
 }
 
@@ -177,9 +177,9 @@ async function sendResetCodeEmail(email, code, userName, userType) {
                 <p>If you didn't request this, please ignore this email.</p>
             `
         });
-        console.log('Reset code email sent successfully');
+        console.log('✅ Reset code email sent');
     } catch (error) {
-        console.error('Email error:', error);
+        console.error('❌ Email error:', error);
     }
 }
 
@@ -204,7 +204,7 @@ app.post('/api/admin/login', async (req, res) => {
 
         res.json({ admin: { id: admin.id, username: admin.username } });
     } catch (error) {
-        console.error('Admin login error:', error);
+        console.error('❌ Admin login error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -232,7 +232,7 @@ app.post('/api/members/register', async (req, res) => {
 
         res.status(201).json({ member: result.rows[0] });
     } catch (error) {
-        console.error('Registration error:', error);
+        console.error('❌ Registration error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -256,7 +256,7 @@ app.post('/api/admin/forgot-password', async (req, res) => {
 
         res.json({ message: 'Reset code sent to email' });
     } catch (error) {
-        console.error('Admin forgot password error:', error);
+        console.error('❌ Admin forgot password error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -288,7 +288,7 @@ app.post('/api/admin/reset-password', async (req, res) => {
         
         res.json({ message: 'Password reset successful' });
     } catch (error) {
-        console.error('Admin reset password error:', error);
+        console.error('❌ Admin reset password error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -313,7 +313,7 @@ app.post('/api/members/forgot-password', async (req, res) => {
 
         res.json({ message: 'Reset code sent to admin email' });
     } catch (error) {
-        console.error('Member forgot password error:', error);
+        console.error('❌ Member forgot password error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -345,7 +345,7 @@ app.post('/api/members/reset-password', async (req, res) => {
         
         res.json({ message: 'Password reset successful' });
     } catch (error) {
-        console.error('Member reset password error:', error);
+        console.error('❌ Member reset password error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -369,7 +369,7 @@ app.post('/api/members/login', async (req, res) => {
 
         res.json({ member: { id: member.id, name: member.name, centre: member.centre, mobile: member.mobile, status: member.status } });
     } catch (error) {
-        console.error('Member login error:', error);
+        console.error('❌ Member login error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -380,7 +380,7 @@ app.get('/api/admin/all-members', async (req, res) => {
         const result = await pool.query('SELECT * FROM members ORDER BY created_at DESC');
         res.json({ members: result.rows });
     } catch (error) {
-        console.error('Get all members error:', error);
+        console.error('❌ Get all members error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -392,7 +392,7 @@ app.delete('/api/admin/delete-member/:id', async (req, res) => {
         await pool.query('DELETE FROM members WHERE id = $1', [id]);
         res.json({ message: 'Member deleted' });
     } catch (error) {
-        console.error('Delete member error:', error);
+        console.error('❌ Delete member error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -403,7 +403,7 @@ app.get('/api/points', async (req, res) => {
         const result = await pool.query('SELECT * FROM points ORDER BY order_num');
         res.json({ points: result.rows });
     } catch (error) {
-        console.error('Get points error:', error);
+        console.error('❌ Get points error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -421,7 +421,7 @@ app.post('/api/admin/points', async (req, res) => {
         );
         res.status(201).json({ point: result.rows[0] });
     } catch (error) {
-        console.error('Add point error:', error);
+        console.error('❌ Add point error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -435,7 +435,7 @@ app.put('/api/admin/points/:id', async (req, res) => {
         await pool.query('UPDATE points SET text = $1 WHERE id = $2', [text, id]);
         res.json({ message: 'Point updated' });
     } catch (error) {
-        console.error('Update point error:', error);
+        console.error('❌ Update point error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
@@ -447,12 +447,12 @@ app.delete('/api/admin/points/:id', async (req, res) => {
         await pool.query('DELETE FROM points WHERE id = $1', [id]);
         res.json({ message: 'Point deleted' });
     } catch (error) {
-        console.error('Delete point error:', error);
+        console.error('❌ Delete point error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
 
-// FIXED: Get Member's Daily Records
+// Get Member's Daily Records - Returns object {pointId: effort}
 app.get('/api/members/:memberId/daily/:date', async (req, res) => {
     try {
         const { memberId, date } = req.params;
@@ -469,12 +469,12 @@ app.get('/api/members/:memberId/daily/:date', async (req, res) => {
         
         res.json(records);
     } catch (error) {
-        console.error('Get daily records error:', error);
+        console.error('❌ Get daily records error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
 
-// FIXED: Update Daily Record
+// Update Daily Record - Saves percentage (0-100)
 app.post('/api/members/:memberId/daily', async (req, res) => {
     try {
         const { memberId } = req.params;
@@ -490,12 +490,12 @@ app.post('/api/members/:memberId/daily', async (req, res) => {
 
         res.json({ message: 'Record updated' });
     } catch (error) {
-        console.error('Update daily record error:', error);
+        console.error('❌ Update daily record error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
 
-// FIXED: Get Member Progress
+// Get Member Progress - Calculates average of percentages
 app.get('/api/members/:memberId/progress/:period', async (req, res) => {
     try {
         const { memberId, period } = req.params;
@@ -514,50 +514,49 @@ app.get('/api/members/:memberId/progress/:period', async (req, res) => {
             const result = await pool.query(
                 `SELECT 
                     COUNT(*) as total_records,
-                    COALESCE(AVG(effort), 0) as avg_effort,
-                    COALESCE(SUM(effort), 0) as sum_effort
+                    COALESCE(AVG(effort), 0) as avg_effort
                  FROM daily_records 
                  WHERE member_id = $1 AND point_id = $2 AND date >= $3`,
                 [memberId, point.id, startDate.toISOString().split('T')[0]]
             );
 
             const avgEffort = parseFloat(result.rows[0].avg_effort) || 0;
-            const totalRecords = parseInt(result.rows[0].total_records) || 0;
 
             return {
                 pointId: point.id,
                 text: point.text,
-                percentage: Math.round(avgEffort),
-                totalRecords: totalRecords,
-                expectedRecords: days
+                percentage: Math.round(avgEffort)
             };
         }));
 
         res.json({ progress });
     } catch (error) {
-        console.error('Get progress error:', error);
+        console.error('❌ Get progress error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
 
-// Get All Members (for member view)
+// Get All Members (for member view) - Only approved members
 app.get('/api/members', async (req, res) => {
     try {
-        const result = await pool.query('SELECT id, name, centre, mobile, status FROM members ORDER BY name');
+        const result = await pool.query(
+            'SELECT id, name, centre, mobile, status FROM members WHERE status = $1 ORDER BY name',
+            ['approved']
+        );
         res.json({ members: result.rows });
     } catch (error) {
-        console.error('Get members error:', error);
+        console.error('❌ Get members error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 });
 
 // Health Check
 app.get('/health', (req, res) => {
-    res.json({ status: 'OK' });
+    res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
 // Start Server
 app.listen(PORT, async () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`🚀 Server running on port ${PORT}`);
     await initDatabase();
 });
