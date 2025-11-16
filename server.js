@@ -1,4 +1,4 @@
-// server.js - Complete Backend for BK Spiritual Chart - FINAL WORKING VERSION
+// server.js - ULTIMATE FIXED VERSION - All data persistence issues resolved
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
@@ -13,6 +13,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({
     origin: [
         'https://try-bk-chart.vercel.app',
+        'https://bk-chart.vercel.app',
         'http://localhost:3000',
         'http://localhost:5173',        
         process.env.FRONTEND_URL
@@ -30,6 +31,15 @@ app.options('*', cors());
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
+
+// Test database connection
+pool.on('connect', () => {
+    console.log('✅ Connected to PostgreSQL database');
+});
+
+pool.on('error', (err) => {
+    console.error('❌ Unexpected database error:', err);
 });
 
 // In-memory storage for reset codes (expires after 15 minutes)
@@ -248,7 +258,7 @@ app.post('/api/admin/forgot-password', async (req, res) => {
         }
 
         const resetCode = generateResetCode();
-        const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
+        const expiresAt = Date.now() + 15 * 60 * 1000;
         
         resetCodes.set(`admin_${username}`, { code: resetCode, expiresAt });
         
@@ -305,7 +315,7 @@ app.post('/api/members/forgot-password', async (req, res) => {
 
         const member = result.rows[0];
         const resetCode = generateResetCode();
-        const expiresAt = Date.now() + 15 * 60 * 1000; // 15 minutes
+        const expiresAt = Date.now() + 15 * 60 * 1000;
         
         resetCodes.set(`member_${mobile}`, { code: resetCode, expiresAt });
         
@@ -452,19 +462,25 @@ app.delete('/api/admin/points/:id', async (req, res) => {
     }
 });
 
-// Get Member's Daily Records - Returns object {pointId: effort}
+// FIXED: Get Member's Daily Records - Returns object with point_id as key
 app.get('/api/members/:memberId/daily/:date', async (req, res) => {
     try {
         const { memberId, date } = req.params;
+        
+        console.log(`📊 Fetching daily records for member ${memberId} on ${date}`);
+        
         const result = await pool.query(
             'SELECT point_id, effort FROM daily_records WHERE member_id = $1 AND date = $2',
             [memberId, date]
         );
         
-        // Return as object with point_id as key and effort as value
+        console.log(`✅ Found ${result.rows.length} records`);
+        
+        // Convert to object format: { pointId: effort }
         const records = {};
         result.rows.forEach(row => {
             records[row.point_id] = row.effort;
+            console.log(`  Point ${row.point_id}: ${row.effort}%`);
         });
         
         res.json(records);
@@ -474,28 +490,33 @@ app.get('/api/members/:memberId/daily/:date', async (req, res) => {
     }
 });
 
-// Update Daily Record - Saves percentage (0-100)
+// FIXED: Update Daily Record - Save percentage
 app.post('/api/members/:memberId/daily', async (req, res) => {
     try {
         const { memberId } = req.params;
         const { date, pointId, completed } = req.body;
+        
+        console.log(`💾 Saving: Member ${memberId}, Point ${pointId}, Date ${date}, Effort ${completed}%`);
 
-        await pool.query(
+        const result = await pool.query(
             `INSERT INTO daily_records (member_id, point_id, date, effort) 
              VALUES ($1, $2, $3, $4) 
              ON CONFLICT (member_id, point_id, date) 
-             DO UPDATE SET effort = $4`,
+             DO UPDATE SET effort = $4
+             RETURNING *`,
             [memberId, pointId, date, completed]
         );
+        
+        console.log(`✅ Saved successfully:`, result.rows[0]);
 
-        res.json({ message: 'Record updated' });
+        res.json({ message: 'Record updated', record: result.rows[0] });
     } catch (error) {
         console.error('❌ Update daily record error:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
 
-// Get Member Progress - Calculates average of percentages
+// FIXED: Get Member Progress - Calculate averages properly
 app.get('/api/members/:memberId/progress/:period', async (req, res) => {
     try {
         const { memberId, period } = req.params;
@@ -507,6 +528,9 @@ app.get('/api/members/:memberId/progress/:period', async (req, res) => {
 
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - days + 1);
+        const startDateStr = startDate.toISOString().split('T')[0];
+
+        console.log(`📈 Getting progress for member ${memberId}, period ${period} (${days} days from ${startDateStr})`);
 
         const points = await pool.query('SELECT * FROM points ORDER BY order_num');
         
@@ -517,22 +541,28 @@ app.get('/api/members/:memberId/progress/:period', async (req, res) => {
                     COALESCE(AVG(effort), 0) as avg_effort
                  FROM daily_records 
                  WHERE member_id = $1 AND point_id = $2 AND date >= $3`,
-                [memberId, point.id, startDate.toISOString().split('T')[0]]
+                [memberId, point.id, startDateStr]
             );
 
             const avgEffort = parseFloat(result.rows[0].avg_effort) || 0;
+            const totalRecords = parseInt(result.rows[0].total_records) || 0;
+
+            console.log(`  Point ${point.id}: ${totalRecords} records, avg ${avgEffort.toFixed(1)}%`);
 
             return {
                 pointId: point.id,
                 text: point.text,
-                percentage: Math.round(avgEffort)
+                percentage: Math.round(avgEffort),
+                records: totalRecords
             };
         }));
+
+        console.log(`✅ Progress calculated for ${progress.length} points`);
 
         res.json({ progress });
     } catch (error) {
         console.error('❌ Get progress error:', error);
-        res.status(500).json({ message: 'Server error' });
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
 
@@ -553,6 +583,20 @@ app.get('/api/members', async (req, res) => {
 // Health Check
 app.get('/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+// Debug endpoint - Check database records
+app.get('/api/debug/records/:memberId', async (req, res) => {
+    try {
+        const { memberId } = req.params;
+        const result = await pool.query(
+            'SELECT * FROM daily_records WHERE member_id = $1 ORDER BY date DESC, point_id',
+            [memberId]
+        );
+        res.json({ records: result.rows });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 // Start Server
