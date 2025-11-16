@@ -525,6 +525,37 @@ app.get('/api/members/:memberId/progress/:period', async (req, res) => {
     }
 });
 
+// TEMPORARY: Fix effort column type (BOOLEAN → INTEGER)
+app.get('/fix-effort-column', async (req, res) => {
+    try {
+        // 1. Remove DEFAULT (if boolean)
+        await pool.query(`ALTER TABLE daily_records ALTER COLUMN effort DROP DEFAULT`);
+
+        // 2. Convert boolean → integer safely
+        await pool.query(`
+            ALTER TABLE daily_records
+            ALTER COLUMN effort TYPE INTEGER
+            USING CASE
+                WHEN effort = true THEN 100
+                WHEN effort = false THEN 0
+                ELSE effort::integer
+            END
+        `);
+
+        // 3. Set default to 0
+        await pool.query(`ALTER TABLE daily_records ALTER COLUMN effort SET DEFAULT 0`);
+
+        res.json({ message: "Effort column successfully fixed to INTEGER (0–100)." });
+    } catch (err) {
+        console.error("Fix column error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
+
+
+
 // Fallback health-check
 app.get('/', (req, res) => {
     res.json({ message: 'BK Spiritual Chart API is running' });
