@@ -383,6 +383,35 @@ app.get('/api/members/:memberId/progress/:period', async (req, res) => {
 // ---------- Health ----------
 app.get('/', (req, res) => res.json({ status: 'OK' }));
 
+
+// ---------- Crossword puzzle shared storage (in-memory) ----------
+
+// ஒரு சிம்பிள் in-memory storage (server restart ஆச்சு என்றா reset ஆகிடும்)
+let currentCrossword = null; // { date, grid, questions }
+
+// Admin: இன்றைய crossword-ஐ save செய்கிறார்
+app.post("/api/crossword/today", (req, res) => {
+  const { date, grid, questions } = req.body || {};
+
+  if (!date || !Array.isArray(grid) || !Array.isArray(questions)) {
+    return res.status(400).json({ message: "Invalid crossword payload" });
+  }
+
+  currentCrossword = { date, grid, questions };
+  console.log("✅ Crossword stored for date:", date);
+  return res.json({ ok: true });
+});
+
+// யார் வேண்டுமானாலும்: இன்றைய crossword-ஐ பெறலாம்
+app.get("/api/crossword/today", (req, res) => {
+  if (!currentCrossword) {
+    return res.status(404).json({ message: "No crossword set for today yet." });
+  }
+  return res.json(currentCrossword);
+});
+
+
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server listening on port ${PORT}`);
