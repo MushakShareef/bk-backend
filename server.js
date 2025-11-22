@@ -16,6 +16,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({
   origin: [
     'https://try-bk-chart.vercel.app',
+    'https://gyan-puzzel-crossword.vercel.app',
     'https://bk-chart.vercel.app',
     'http://localhost:3000',
     'http://localhost:5173',
