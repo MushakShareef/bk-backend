@@ -80,6 +80,15 @@ async function ensureSchemaAndDefaults() {
     );
   `);
 
+    await pool.query(`
+    CREATE TABLE IF NOT EXISTS crosswords (
+      date DATE PRIMARY KEY,
+      data JSONB NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+
   // default admin
   const adminRes = await pool.query(`SELECT * FROM admins WHERE username=$1`, ['AmeerMushak']);
   if (adminRes.rows.length === 0) {
@@ -411,7 +420,49 @@ app.get("/api/crossword/today", (req, res) => {
   return res.json(currentCrossword);
 });
 
+// Save today's crossword
+app.post('/api/crossword/today', async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const data = req.body; // { grid, questions, date }
 
+    await pool.query(`
+      INSERT INTO crosswords (date, data)
+      VALUES ($1, $2)
+      ON CONFLICT (date)
+      DO UPDATE SET data = EXCLUDED.data
+    `, [today, data]);
+
+    res.json({ message: 'Crossword saved', date: today });
+  } catch (err) {
+    console.error('Crossword save error', err);
+    res.status(500).json({ message: 'Crossword save failed' });
+  }
+});
+
+// Get today's crossword
+app.get('/api/crossword/today', async (req, res) => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const r = await pool.query(
+      'SELECT data FROM crosswords WHERE date = $1',
+      [today]
+    );
+
+    if (r.rows.length === 0) {
+      return res.status(404).json({ message: 'No crossword set for today yet.' });
+    }
+
+    // data columnல நம்ம original {grid, questions, date} JSON இருக்குது
+    res.json(r.rows[0].data);
+  } catch (err) {
+    console.error('Crossword fetch error', err);
+    res.status(500).json({ message: 'Crossword fetch failed' });
+  }
+});
+
+// ---------- Health ----------
+app.get('/', (req, res) => res.json({ status: 'OK' }));
 
 // Start server
 app.listen(PORT, () => {
