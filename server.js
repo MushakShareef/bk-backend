@@ -451,17 +451,19 @@ app.post('/api/crossword/today', async (req, res) => {
 // Get today's crossword
 app.get('/api/crossword/today', async (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    // client அனுப்பின date இருந்தா அதை use பண்ணு, இல்லாட்டி today
+    const qDate = req.query.date;
+    const date = qDate || new Date().toISOString().split('T')[0];
+
     const r = await pool.query(
       'SELECT data FROM crosswords WHERE date = $1',
-      [today]
+      [date]
     );
 
     if (r.rows.length === 0) {
-      return res.status(404).json({ message: 'No crossword set for today yet.' });
+      return res.status(404).json({ message: 'No crossword set for this date.' });
     }
 
-    // data columnல நம்ம original {grid, questions, date} JSON இருக்குது
     res.json(r.rows[0].data);
   } catch (err) {
     console.error('Crossword fetch error', err);
