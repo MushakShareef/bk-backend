@@ -423,22 +423,30 @@ app.get("/api/crossword/today", (req, res) => {
 // Save today's crossword
 app.post('/api/crossword/today', async (req, res) => {
   try {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const data = req.body; // { grid, questions, date }
+    const { date, grid, questions } = req.body || {};
+
+    // basic validation
+    if (!date || !Array.isArray(grid) || !Array.isArray(questions)) {
+      return res.status(400).json({ message: 'Invalid crossword payload' });
+    }
+
+    // முழு data JSON-ஆ சேமிக்கறது (grid + questions + date)
+    const data = { date, grid, questions };
 
     await pool.query(`
       INSERT INTO crosswords (date, data)
       VALUES ($1, $2)
       ON CONFLICT (date)
       DO UPDATE SET data = EXCLUDED.data
-    `, [today, data]);
+    `, [date, data]);           // ✅ இப்போ client அனுப்புற date use ஆகுது
 
-    res.json({ message: 'Crossword saved', date: today });
+    res.json({ message: 'Crossword saved', date });
   } catch (err) {
     console.error('Crossword save error', err);
     res.status(500).json({ message: 'Crossword save failed' });
   }
 });
+
 
 // Get today's crossword
 app.get('/api/crossword/today', async (req, res) => {
