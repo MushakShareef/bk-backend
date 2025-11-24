@@ -397,13 +397,13 @@ app.get('/', (req, res) => res.json({ status: 'OK' }));
 
 
 
-await pool.query(`
-  CREATE TABLE IF NOT EXISTS crosswords (
-    date DATE PRIMARY KEY,
-    data JSONB NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  );
-`);
+// await pool.query(`
+//   CREATE TABLE IF NOT EXISTS crosswords (
+//     date DATE PRIMARY KEY,
+//     data JSONB NOT NULL,
+//     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+//   );
+// `);
 
 
 // Save today's crossword
@@ -457,18 +457,19 @@ app.get('/api/crossword/today', async (req, res) => {
   }
 });
 
+
 // ---------- Health ----------
 app.get('/', (req, res) => res.json({ status: 'OK' }));
 
+// run at startup
+ensureSchemaAndDefaults().catch(err => {
+  console.error('Schema init error', err);
+});
 
-
-(async () => {
-  await ensureSchemaAndDefaults(); // table creation etc.
-  
-  app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
-})();
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Server listening on port ${PORT}`);
+});
 
 
 
