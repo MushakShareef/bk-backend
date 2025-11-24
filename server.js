@@ -142,7 +142,7 @@ function computeRangeForPeriod(period) {
 app.get('/api/debug/reset-all', async (req, res) => {
   try {
     await pool.query(`DROP TABLE IF EXISTS daily_records; DROP TABLE IF EXISTS points; DROP TABLE IF EXISTS members; DROP TABLE IF EXISTS admins`);
-    await ensureSchemaAndDefaults();
+    // await ensureSchemaAndDefaults();
     res.json({ status: 'OK', message: 'Database reset complete — Admin + 10 points restored successfully.' });
   } catch (err) {
     console.error('reset-all error', err);
@@ -460,7 +460,15 @@ app.get('/api/crossword/today', async (req, res) => {
 // ---------- Health ----------
 app.get('/', (req, res) => res.json({ status: 'OK' }));
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server listening on port ${PORT}`);
-});
+
+
+(async () => {
+  await ensureSchemaAndDefaults(); // table creation etc.
+  
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+})();
+
+
+
